@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import readline
+from dso3000 import *
+
+scope = DSO3000()
+(manufacturer, model, serial_number, firmware_version) = scope.command('*IDN?').split(',')
+print 'Manufacturer:    ', manufacturer
+print 'Model:           ', model
+print 'Serial number:   ', serial_number
+print 'Firmware version:', firmware_version
+print
+print 'Enter a blank line to exit.'
+while True:
+	text = raw_input('> ')
+	if not text:
+		break
+	response = scope.command(text)
+	if response:
+		print response

@@ -1,0 +1,3 @@
+# Rigol/Agilent oscilloscopes
+SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="0400", ATTRS{idProduct}=="c55d", GROUP="plugdev"
+

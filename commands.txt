@@ -1,0 +1,337 @@
+This information was determined for the 03.02.06 firmware.
+The firmware which shipped with my scope (03.01.18) had some GPIB command bugs.
+The new firmware fixes many of those and seems to be faster, too.
+
+--------
+
+Commands marked "Secret" are those that aren't available from the front
+panel, but should be.
+
+General:
+
+To set a parameter:
+:PARAM value
+
+To query a parameter:
+:PARAM?
+
+--------
+Top-level commands:
+WHO ARE YOU
+        That's right, no colon prefix.
+        Responds with "I'm RIGOL".
+
+*IDN?
+        Returns device information in a comma-delimited string:
+
+        Manufacturer, model, serial number, firmware version
+
+        The 03.01.18 firmware always reported its serial number as 0,
+        so the serial number had to be retrieved with :SYS_INFO:ID:?.
+
+*OPC?
+        Returns 0 if there is an operation in progress or 1 if not.
+
+*RST
+        Loads the factory setup.  Probably the same as
+                :SYS_PARAMETER:LOAD_FACTORY_SETUP
+
+SYS RESET
+        Don't use this.
+        It's supposed to reset the scope, which it does, but then the scope
+        crashes after initialization and has to be power cycled.
+
+        The 03.01.18 firmware didn't display the logo correctly, but otherwise
+        behaved in the same way.
+
+--------
+System information:
+:SYS_INFO
+
+Serial number:                  Queryable, not settable
+        :ID?
+
+        In firmware 03.01.18, this had to be issued as
+                :SYS_INFO:ID:?
+        instead of the current, correct
+                :SYS_INFO:ID?
+
+        Also this was the only way in 03.01.18 to get the serial number, since
+        *IDN? didn't report it.
+
+Module type:                    Queryable, not settable
+        :MODULE?
+
+        There are strings for EM5-PF, EM5-COM, and EM5-CM in the firmware.
+        Perhaps only those three modules can possible be connected?
+
+Ultrascope mode (?):            Queryable
+        :ULTRASCOPE
+        ON or OFF
+
+        Ultrascope is the name of Rigol's scope software.
+        This command does not appear to have any effect.
+
+Language:                       Broken
+        :LANGUAGE?
+
+        This (kind of) queries and sets the language for the menus.
+
+        The query causes the current language to be printed somewhere on the screen,
+        in some color.
+        It typically appears where the "AUTO" trigger text is or in the upper-left corner.
+        It looks like the firmware has a current cursor position and color, and the
+        current language is printed wherever that happens to be.
+
+        To set the language:
+        :LANGUAGE:x where x is:
+                KOREAN
+                JAPANESE
+                ENGLISH
+                FRENCH
+                GERMAN
+                ITALIAN
+                SPANISH
+        
+        There are strings in the firmware for Portugese and simplified and traditional Chinese,
+        but I haven't figured out how to make them work yet.
+
+        Changing the language does not cause the screen to be refreshed.
+
+        The language settings are broken.  Here is the mapping from language string to the
+        language that is actually used:
+                :KOREAN         Korean
+                :JAPANESE       Japanese
+                :ENGLISH        English
+                :FRENCH         German
+                :GERMAN         French
+                :ITALIAN        Italian
+                :SPANISH        Russian
+
+        Interestingly, I have not found a string for Russian in the firmware.
+        I also have not found a command that actually sets Spanish.
+
+Frequency counter:              Queryable, settable
+        :COUNTER
+
+        The counter shows the frequency of triggers.
+
+        To turn the counter on or off:
+                :ENABLE (:ENAB) <0 or 1>
+                :ENABLE? (:ENAB?)
+
+        To read the counter's value:
+                :VALUE? (:VAL?)
+
+Beeper:                         Queryable
+        :BEEP:ENABLED (:BEEP:ENAB) <0 or 1>
+        :BEEP:ENABLED? (:BEEP:ENAB?)
+
+        To cause a beep if the beep is enabled:
+                :SYS_INFO:BEEP:ACTION (SYS_INFO:BEEP:ACT)
+
+--------
+
+Channel control:
+:CHANNELn (:CHANn) where n=1 or 2
+
+Bandwidth limit:                Queryable
+        :BWLIMIT (:BWL) <0 or 1>
+        :BWLIMIT? (:BWL?)
+
+Invert:                         Queryable
+        :INVERT (:INV) <0 or 1>
+        :INVERT? (:INV?)
+
+Scale:                          Queryable
+        :SCALE (:SCAL) <V/div>
+        :SCALE? (:SCAL?)
+
+Input impedance:                Secret, Queryable
+        :INPUT (:INP) <50O or 1MO>
+        :INPUT? (:INP?)
+
+        The query returns 50 (for 50 ohms) or 1e6 (for 1M ohms).
+
+        According to the Rigol DS5000 docs, only certain models support this.
+        At least the Agilent DSO3102A has the hardware, but doesn't provide
+        front-panel access.
+
+        When switching manually from GND to AC input, this is reset to 1MO.
+
+Probe type:                     Queryable
+        :PROBE (:PROB) <1, 10, 100, 1000>
+        :PROBE? (:PROB?)
+
+        No more than 4 characters of the value are parsed, and parsing stops at the first
+        character that is not 1 or 0.  Thus, 12x == 1 and 10000 == 1000.
+
+Offset:                         Queryable
+        :OFFSET (:OFFS) <offset in volts>
+        :OFFSET? (:OFFS?)
+
+--------
+To do:
+
+*RST
+:HARD_COPY
+:RUN
+:STOP
+:AUTOSCALE (:AUT)
+:FORCETRIG
+:TRIG%50
+:SINGLE (:SING)
+:DISP
+        :GRID?
+        :TYPE?
+        :PERSISTENCE? (:PERS?)
+        :CONTRAST? (:CONT?)
+        :SCREEN? (:SCR?)
+        :CLEAR (:CLR)
+        :MENUSTATUS?
+        :MENUDISPLAY? (:MENU?)
+:ACQUIRE (:ACQ)
+        :MODE?
+        :AVERAGES? (:AVER?)
+        :SRATE? (:SRAT?)
+:TIMEBASE (:TIM)
+        :DELAYED? (:DEL?)
+        :FORMAT? (:FORM?)
+        :SCALE? (:SCAL?)
+        :POSITION? (:POS?)
+        :HOLDOFF? (:HOLD?)
+        :SCAN?
+        :BMODE?
+:TRIGGER (:TRIG)
+        :MODE?
+        :EDGE
+                :SLOPE?
+                :SOURCE? (:SOUR?)
+                :SWEEP? (:SWE?)
+                :COUPLING? (:COUP?)
+                :LEVEL? (:LEV?)
+        :VIDEO (:VID)
+                :STANDARD? (:STAN?)
+                :POLARITY? (:POL?)
+                :SYNC?
+                :LINE?
+        :PULSE (:PULS)
+                :WIDTH? (:WIDT?)
+        :STATUS? (:STAT?)
+
+        Commands under the each mode are available directly through :TRIG, e.g.:
+                :TRIG:SLOPE POSITIVE
+        instead of:
+                :TRIG:EDGE:SLOPE POSITIVE)
+
+        Some parameters are used by modes other than the ones where they are defined.
+        For example, :TRIG:LEVEL is used by pulse, but it is canonically :TRIG:EDGE:LEVEL.
+        Pulse does not have a seperate level.
+:SAVERECALL (:SAV)
+        ...
+:MEASURE (:MEAS)
+        These are officially documented.
+        (Are there any that aren't?)
+
+        :VPP?
+        :VMAX?
+        :VMIN?
+        :VTOP?
+        :VBASE? (:VBAS?)
+        :VAMPLITUDE? (:VAMP?)
+        :VAVERAGE? (:VAV?)
+        :VRMS?
+        :OVERSHOOT? (:OVER?)
+        :PRESHOOT? (:PRES?)
+        :FREQUENCY? (:FREQ?)
+        :PERIOD? (:PER?)
+        :RISETIME? (:RIS?)
+        :FALLTIME? (:FALL?)
+        :PWIDTH? (:PWID?)
+        :NWIDTH? (:NWID?)
+        :PDUTYCYCLE? (:PDUT?)
+        :NDUTYCYCLE? (:NDUT?)
+        :EDGE_Pn (n=1 to 5)
+        :EDGE_Nn (n=1 to 5)
+:WAVEFORM (:WAV)
+        :SOURCE? (:SOUR?)
+        :DATA?
+        :MEMORYDATA? (:MEM?)
+        :MAXPEAKDETECT? (:MAXP?)
+        :MINPEAKDETECT? (:MINP?)
+        :SCREENDATA?
+        :SCREENMAX?
+        :SCREENMIN?
+        :STARTOFROLLING? (:STAR?)
+        :ERASEOFROLLING? (:ERAS?)
+        :WINDOWZOOM? (:WIND?)
+        :SYSMEMSIZE? (:SYSM?)
+        :WINMEMSIZE? (:WINM?)
+        :XINCREMENT? (:XINC?)
+        :YINCREMENT? (:YINC?)
+        :XORIGIN? (:XOR?)
+        :YORIGIN? (:YOR?)
+        :TPOSITION? (:TPOS?)
+        :WPOSITION? (:WPOS?)
+        :XSTART? (:XST?)
+        :XEND?
+:KEY
+        :LOCK?
+        :AUTO_SCALE
+        :MATH
+        :REF
+        :MENU_ON_OFF
+        :CURSOR
+        :SAVE_RECALL
+        :UTILITY
+        :MAIN_DELAYED
+        :MODE_COUPLING
+        :FORCE
+        :CH1_POS_INC
+        :CH1_POS_DEC
+        :CH1_POS_INC_CORASE
+        :CH1_POS_DEC_COARSE
+        :CH1_SCALE_INC
+        :CH1_SCALE_DEC
+        :CH2_POS_INC
+        :CH2_POS_DEC
+        :CH2_POS_INC_CORASE
+        :CH2_POS_DEC_COARSE
+        :CH2_SCALE_INC
+        :CH2_SCALE_DEC
+        :TIME_POS_INC
+        :TIME_POS_DEC
+        :TIME_POS_INC_COARSE
+        :TIME_POS_DEC_COARSE
+        :TRIG_LEVEL_INC
+        :TRIG_LEVEL_DEC
+        :TRIG_LEVEL_INC_COARSE
+        :TRIG_LEVEL_DEC_COARSE
+        :TIME_SCALE_INC
+        :TIME_SCALE_DEC
+        :FUNC_INC
+        :FUNC_DEC
+        :FUNC_INC_COARSE
+        :FUNC_DEC_COARSE
+        :PROMPT_CH1
+        :PROMPT_CH2
+        :PROMPT_TIME
+        :CH1
+        :CH2
+:SYS_PARAMETER
+        :5MV?
+        :10MV?
+        :20MV?
+        :100MV?
+        :200MV?
+        :500MV?
+        :ATTENUATOR?
+        :INTERPOLATOR
+        :EXT_DAC?
+        :EXT5_DAC?
+        :CH1_ADC?
+        :CH2_ADC?
+        :DELAY?
+        :LOAD_FACTORY_PARAMETER
+        :LOAD_FACTORY_SETUP
+
