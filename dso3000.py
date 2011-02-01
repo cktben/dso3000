@@ -1,4 +1,8 @@
 import usb
+try:
+	import Image
+except:
+	pass
 
 class DSO3000:
 	'''Class to interface over USB with a Agilent DSO3000A-series (and probably Rigol DSO5000) oscilloscope.
@@ -14,6 +18,15 @@ class DSO3000:
 		If flush==True, any pending data is discarded.'''
 		
 		self.device = None
+		
+		self.palette = [0] * 768
+		# Build the default palette.
+		# This is based on what the palette appears to be *intended* to be,
+		# which is more colorful than the scope's actual display.
+		for i in range(256):
+			self.palette[i*3]   = i / 64 * 255 / 3
+			self.palette[i*3+1] = (i & 0x30) / 16 * 255 / 3
+			self.palette[i*3+2] = (i & 0x0c) / 4 * 255 / 3
 		
 		# Time in milliseconds to wait for a USB control transaction to finish.
 		# *RST takes about 1500ms, so the timeout should be longer than that.
@@ -103,21 +116,22 @@ class DSO3000:
 		self.command(':WAV:SOUR CHANNEL%d' % channel)
 		return self.readData(':WAV:DATA?')
 	
-	def screenshot(self):
+	def raw_screenshot(self):
+		'''Reads a screenshot from the scope.  Returns a 76800-element array
+		of pixels.  Each pixel is a byte with the format RRGGBBxx.'''
 		self.write(':HARD_COPY')
 		assert self.device.controlMsg(0xc0, 8, 0, 0, 0x50, self.timeout) == ()
 		# wIndex:wValue is the length of data returned
 		assert self.device.controlMsg(0xc0, 9, 0, 0x2c00, 1, self.timeout) == ()
 		assert self.device.controlMsg(0xc0, 7, 0, 0, 0x50, self.timeout) == ()
-		data = self.device.bulkRead(1, 76800, self.timeout)
+		raw = self.device.bulkRead(1, 76800, self.timeout)
 		assert self.getResponseLength() == 0
-		return data
-
-# Colors:
-# 50 background yellow
-# 30 Remote red/pink
-# c0 green
-# a8 white
-# e0 yellow
-# f0 blue
-# inverted changes the meaning of e0...
+		return raw
+	
+	def screenshot(self):
+		'''Reads a screenshot and returns an Image object.  The Python Imaging Library
+		must be available in order to use this function.'''
+		data = ''.join([chr(x) for x in self.raw_screenshot()])
+		im = Image.frombuffer('L', (320, 240), data, 'raw', 'L', 0, 1)
+		im.putpalette(self.palette)
+		return im

@@ -10,7 +10,4 @@ if len(sys.argv) != 2:
 	sys.exit(1)
 
 scope = DSO3000()
-data = ''.join([chr(x) for x in scope.screenshot()])
-im = Image.frombuffer('L', (320, 240), data, 'raw', 'L', 0, 1)
-im.save(sys.argv[1])
-
+scope.screenshot().save(sys.argv[1])
